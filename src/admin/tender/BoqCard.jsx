@@ -137,7 +137,7 @@ const BOQCard = ({ proposal, tenderId, onDownload }) => {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-white text-green-700 hover:bg-green-50 transition disabled:opacity-60"
           >
             <FileDown size={12} />
-            {downloading ? "Preparing…" : "Download .docx"}
+            {downloading ? "Preparing…" : "Download .xlsx"}
           </button>
         </div>
       </div>
@@ -146,7 +146,7 @@ const BOQCard = ({ proposal, tenderId, onDownload }) => {
       <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border-b border-green-100">
         <CheckCircle2 size={13} className="text-green-500 flex-shrink-0" />
         <p className="text-[12px] text-green-700 font-medium">
-          Your BOQ is ready. Download the Word document to share with vendors.
+          Your BOQ is ready. Download the Excel document to share with vendors.
         </p>
       </div>
 

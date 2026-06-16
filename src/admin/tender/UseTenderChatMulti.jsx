@@ -93,7 +93,7 @@ export const UseTenderChatMulti = () => {
 
       setPhase("chatting");
 
-      console.log("Response Message:", data.message);
+      
 
       pushBot(data.message);
       // console.log("pushBot called");

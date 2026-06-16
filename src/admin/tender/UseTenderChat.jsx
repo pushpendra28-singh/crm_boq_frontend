@@ -143,6 +143,44 @@ export const useTenderChat = () => {
     }
   }, []);
 
+
+  const downloadXlsx = useCallback(async (id) => {
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/tender/${id}/download-xlsx`,
+      {
+        headers: {
+          Authorization: `Bearer ${getToken()}`
+        }
+      }
+    );
+
+    if (!res.ok) throw new Error("Download failed.");
+
+    const blob = await res.blob();
+
+    const disposition =
+      res.headers.get("Content-Disposition") || "";
+
+    const match =
+      disposition.match(/filename="?([^"]+)"?/);
+
+    const filename =
+      match?.[1] || "BOQ.xlsx";
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("XLSX download error:", err);
+  }
+}, []);
+
   const reset = useCallback(() => {
     setMessages([]);
     setTenderId(null);
@@ -180,7 +218,20 @@ export const useTenderChat = () => {
   // }, []);
 
   return {
-    messages, typing, phase, proposal, error, tenderId,
-    startChat, sendMessage, sendDocPrompt, pushBot, reset, downloadDocx, handleSendOption, handleVendorDone
+    messages,
+  typing,
+  phase,
+  proposal,
+  error,
+  tenderId,
+  startChat,
+  sendMessage,
+  sendDocPrompt,
+  pushBot,
+  reset,
+  downloadDocx,
+  downloadXlsx,
+  handleSendOption,
+  handleVendorDone
   };
 };
