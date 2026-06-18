@@ -284,37 +284,63 @@ const CreateTender = ({ onBack }) => {
     }
   };
 
-  // Greeting — only 2 options now
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
 
-    pushBot("👋 Hi! I'll help you create a detailed multi-work BOQ (Bill of Quantities) in Excel covering all your project work areas — electrical, CCTV, flooring, civil, furniture, and more.");
-    setTimeout(() => {
-      pushBot("How would you like to proceed?", {
-        options: [
-          {
-            key: "manual",
-            label: "Answer a few quick questions",
-            description: "I ask 2 smart question rounds — complete multi-work Excel BOQ ready in minutes.",
-            onSelect: handleModeSelect,
-          },
-          {
-            key: "upload",
-            label: "Describe directly / Upload document",
-            description: "Describe all work areas or attach an existing requirements doc.",
-            onSelect: handleModeSelect,
-          },
-        ],
-      });
-    }, 600);
-  });
+    const initializeWelcomeScreen = () => {
+  pushBot(
+    "👋 Hi! I'll help you create a detailed multi-work BOQ (Bill of Quantities) in Excel covering all your project work areas — electrical, CCTV, flooring, civil, furniture, and more."
+  );
+
+  setTimeout(() => {
+    pushBot("How would you like to proceed?", {
+      options: [
+        {
+          key: "manual",
+          label: "Answer a few quick questions",
+          description:
+            "I ask 2 smart question rounds — complete multi-work Excel BOQ ready in minutes.",
+          onSelect: handleModeSelect,
+        },
+        {
+          key: "upload",
+          label: "Describe directly / Upload document",
+          description:
+            "Describe all work areas or attach an existing requirements doc.",
+          onSelect: handleModeSelect,
+        },
+      ],
+    });
+  }, 300);
+};
+
+  // Greeting — only 2 options now
+ useEffect(() => {
+  if (initializedRef.current) return;
+
+  initializedRef.current = true;
+  initializeWelcomeScreen();
+}, []);
 
   const resolvedMessages = messages.map((m, i) =>
     m.options && modeChosen && i < messages.length - 1
       ? { ...m, options: undefined }
       : m
   );
+
+
+
+
+const handleNewChat = () => {
+  reset();
+
+  setInput("");
+  setModeChosen(false);
+
+  initializedRef.current = false;
+
+  setTimeout(() => {
+    initializeWelcomeScreen();
+  }, 100);
+};
 
   const handleSend = () => {
     const val = input.trim();
@@ -374,20 +400,24 @@ const CreateTender = ({ onBack }) => {
           </div>
         )}
 
-        {phase === "done" && (
-          <>
-            <div className="ml-auto flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-full px-3 py-1.5">
-              <CheckCircle2 size={12} className="text-green-500" />
-              <span className="text-[11px] font-semibold text-green-600">BOQ Ready</span>
-            </div>
-            <button
-              onClick={reset}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition"
-            >
-              <RefreshCw size={11} /> New
-            </button>
-          </>
-        )}
+       <div className="ml-auto flex items-center gap-2">
+  {phase === "done" && (
+    <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-full px-3 py-1.5">
+      <CheckCircle2 size={12} className="text-green-500" />
+      <span className="text-[11px] font-semibold text-green-600">
+        BOQ Ready
+      </span>
+    </div>
+  )}
+
+  <button
+    onClick={handleNewChat}
+    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition"
+  >
+    <RefreshCw size={11} />
+    New
+  </button>
+</div>
       </div>
 
       {/* Chat window */}
@@ -439,29 +469,7 @@ const CreateTender = ({ onBack }) => {
           {docFlowActive && (
             <DocUploadPanel
               onSubmit={sendDocPrompt}
-              onCancel={() => {
-                reset();
-                setTimeout(() => {
-                  initializedRef.current = false;
-                  pushBot("👋 Hi! Let's create your multi-work BOQ. How would you like to proceed?");
-                  pushBot("How would you like to proceed?", {
-                    options: [
-                      {
-                        key: "manual",
-                        label: "Answer a few quick questions",
-                        description: "2 smart question rounds — Excel BOQ ready in minutes.",
-                        onSelect: handleModeSelect,
-                      },
-                      {
-                        key: "upload",
-                        label: "Describe directly / Upload document",
-                        description: "Describe all work areas or attach a requirements doc.",
-                        onSelect: handleModeSelect,
-                      },
-                    ],
-                  });
-                }, 100);
-              }}
+             onCancel={handleNewChat}
               disabled={typing || phase === "generating"}
             />
           )}
