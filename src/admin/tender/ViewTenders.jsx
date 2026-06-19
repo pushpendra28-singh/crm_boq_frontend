@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, FolderOpen, Search, Clock,
   CheckCircle2, XCircle, AlertCircle, FileText,
-  Calendar, RefreshCw, Loader2,
+  Calendar, RefreshCw, Loader2, Send,
 } from "lucide-react";
 import API_BASE_URL from "../../config/api";
 
@@ -26,43 +26,55 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const TenderCard = ({ tender, onClick }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 6 }}
-    animate={{ opacity: 1, y: 0 }}
-    onClick={onClick}
-    className="bg-white border border-gray-200 rounded-2xl p-5 hover:border-gray-300 hover:shadow-sm transition-all"
-  >
-    <div className="flex items-start justify-between gap-3 mb-3">
-      <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-          <FileText size={15} className="text-gray-500" />
-        </div>
-        <div>
-          <p className="text-[13px] font-bold text-gray-800 leading-tight line-clamp-1">
-            {tender.title || "Untitled Tender"}
-          </p>
-          <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
-            {String(tender._id).slice(-8).toUpperCase()}
-          </p>
-        </div>
-      </div>
-      <StatusBadge status={tender.status} />
-    </div>
+const TenderCard = ({ tender, onClick }) => {
+  const sentCount = tender.sentTo?.length || 0;
 
-    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-      <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
-        <Calendar size={11} />
-        {new Date(tender.createdAt).toLocaleDateString()}
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
+      className="bg-white border border-gray-200 rounded-2xl p-5 hover:border-gray-300 hover:shadow-sm transition-all"
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <FileText size={15} className="text-gray-500" />
+          </div>
+          <div>
+            <p className="text-[13px] font-bold text-gray-800 leading-tight line-clamp-1">
+              {tender.title || "Untitled Tender"}
+            </p>
+            <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
+              {String(tender._id).slice(-8).toUpperCase()}
+            </p>
+          </div>
+        </div>
+        <StatusBadge status={tender.status} />
       </div>
-      {tender.docFileName && (
-        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-500 border border-indigo-100">
-          Doc Upload
-        </span>
-      )}
-    </div>
-  </motion.div>
-);
+
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+          <Calendar size={11} />
+          {new Date(tender.createdAt).toLocaleDateString()}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {tender.docFileName && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-500 border border-indigo-100">
+              Doc Upload
+            </span>
+          )}
+          {sentCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+              <Send size={10} />
+              Sent to {sentCount} vendor{sentCount !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 const FILTERS = ["all", "in_progress", "draft", "pending", "approved", "rejected"];
 
