@@ -509,7 +509,7 @@ const ViewUsers = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        console.log("ROLES API RESPONSE:", data);
+        // console.log("ROLES API RESPONSE:", data);
         setUsers(Array.isArray(data) ? data : data.users || []);
       } else {
         toast.error("Failed to load users");
@@ -523,21 +523,51 @@ const ViewUsers = () => {
   };
 
   // Fetch custom roles for role selector
-  const fetchCustomRoles = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/roles`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const allRoles = data.roles
-          || [...(data.systemRoles || []), ...(data.customRoles || [])];
-        setCustomRoles(allRoles);
-      }
-    } catch (err) {
-      console.error(err);
+ const fetchCustomRoles = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/roles`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Roles API Error:", data);
+
+      toast.error(
+        data.message || "Failed to load roles"
+      );
+
+      return;
     }
-  };
+
+    const allRoles = Array.isArray(data.roles)
+      ? data.roles
+      : [
+          ...(data.systemRoles || []),
+          ...(data.customRoles || []),
+        ];
+
+    // console.table(
+    //   allRoles.map((role) => ({
+    //     name: role.name,
+    //     slug: role.slug,
+    //     id: role._id,
+    //   }))
+    // );
+
+    setCustomRoles(allRoles);
+  } catch (error) {
+    console.error(
+      "Fetch roles error:",
+      error
+    );
+
+    toast.error("Server error loading roles");
+  }
+};
 
   useEffect(() => {
     fetchUsers();

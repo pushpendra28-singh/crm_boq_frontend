@@ -29,8 +29,258 @@ const BotAvatar = () => (
   </div>
 );
 
+
+const QuestionBubble = ({
+  msg,
+  sendOptionAnswer,
+  sendMultiOptionAnswer,
+  typing,
+}) => {
+  const [selected, setSelected] = useState([]);
+  const [customValue, setCustomValue] = useState("");
+
+  const options = Array.isArray(msg.options)
+    ? msg.options
+    : [];
+
+  const isSingle =
+    msg.inputType === "single_select";
+
+  const isMulti =
+    msg.inputType === "multi_select";
+
+  const disabled =
+    typing || msg.answered;
+
+  const handleSingleSelect = async (option) => {
+    if (disabled) return;
+
+    setSelected([option.value]);
+
+    await sendOptionAnswer(option.value);
+  };
+
+  const handleMultiToggle = (option) => {
+    if (disabled) return;
+
+    setSelected((prev) => {
+      const exists = prev.includes(option.value);
+
+      if (exists) {
+        return prev.filter(
+          (value) => value !== option.value
+        );
+      }
+
+      const max =
+        Number.isInteger(msg.selectionMax) &&
+        msg.selectionMax > 0
+          ? msg.selectionMax
+          : options.length;
+
+      if (prev.length >= max) {
+        return prev;
+      }
+
+      return [...prev, option.value];
+    });
+  };
+
+  const handleMultiSubmit = async () => {
+    if (disabled) return;
+
+    const values = [...selected];
+
+    if (customValue.trim()) {
+      values.push(customValue.trim());
+    }
+
+    const min =
+      Number.isInteger(msg.selectionMin)
+        ? msg.selectionMin
+        : 1;
+
+    if (values.length < min) {
+      return;
+    }
+
+    await sendMultiOptionAnswer(values);
+  };
+
+  const handleCustomSubmit = async () => {
+    const value = customValue.trim();
+
+    if (!value || disabled) return;
+
+    if (isSingle) {
+      await sendOptionAnswer(value);
+      return;
+    }
+
+    if (isMulti) {
+      await sendMultiOptionAnswer([
+        ...selected,
+        value,
+      ]);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 7 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22 }}
+      className="flex gap-3 justify-start"
+    >
+      <BotAvatar />
+
+      <div className="max-w-[78%] bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-4 shadow-sm">
+        <p className="text-[13px] leading-relaxed text-gray-700 mb-3">
+          {msg.text}
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          {options.map((option) => {
+            const active =
+              selected.includes(option.value) ||
+              msg.selectedAnswer === option.value;
+
+            return (
+              <motion.button
+                key={option.value}
+                whileTap={
+                  disabled
+                    ? {}
+                    : { scale: 0.97 }
+                }
+                onClick={() =>
+                  isSingle
+                    ? handleSingleSelect(option)
+                    : handleMultiToggle(option)
+                }
+                disabled={disabled}
+                className={`px-3.5 py-2 rounded-xl border text-[12px] font-medium transition-all
+                  ${
+                    active
+                      ? "border-green-500 bg-green-50 text-green-700"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-green-300 hover:bg-green-50/50"
+                  }
+                  ${
+                    disabled
+                      ? "cursor-default opacity-70"
+                      : "cursor-pointer"
+                  }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  {active && (
+                    <CheckCircle2 size={12} />
+                  )}
+
+                  {option.label}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {msg.allowCustomInput &&
+          !msg.answered && (
+            <div className="mt-3 flex gap-2">
+              <input
+                value={customValue}
+                onChange={(e) =>
+                  setCustomValue(e.target.value)
+                }
+                placeholder="Other / enter your own answer"
+                disabled={typing}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    !e.shiftKey
+                  ) {
+                    e.preventDefault();
+                    handleCustomSubmit();
+                  }
+                }}
+                className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-[12px] text-gray-700 outline-none focus:bg-white focus:border-green-400 transition"
+              />
+
+              {isSingle && (
+                <button
+                  onClick={handleCustomSubmit}
+                  disabled={
+                    !customValue.trim() ||
+                    typing
+                  }
+                  className={`px-3 py-2 rounded-lg text-[12px] font-medium transition
+                    ${
+                      customValue.trim() &&
+                      !typing
+                        ? "bg-green-500 text-white hover:bg-green-600"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    }`}
+                >
+                  Select
+                </button>
+              )}
+            </div>
+          )}
+
+        {isMulti &&
+          !msg.answered && (
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-[10.5px] text-gray-400">
+                Select all that apply
+              </p>
+
+              <button
+                onClick={handleMultiSubmit}
+                disabled={
+                  typing ||
+                  (
+                    selected.length +
+                    (customValue.trim() ? 1 : 0)
+                  ) <
+                    Math.max(
+                      msg.selectionMin || 1,
+                      1
+                    )
+                }
+                className={`px-4 py-2 rounded-lg text-[12px] font-semibold transition
+                  ${
+                    !typing &&
+                    (
+                      selected.length +
+                      (customValue.trim()
+                        ? 1
+                        : 0)
+                    ) >=
+                      Math.max(
+                        msg.selectionMin || 1,
+                        1
+                      )
+                      ? "bg-green-500 text-white hover:bg-green-600"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
+              >
+                Continue
+              </button>
+            </div>
+          )}
+
+        {msg.answered && (
+          <div className="mt-3 flex items-center gap-1.5 text-[10.5px] text-green-600">
+            <CheckCircle2 size={11} />
+            Answer submitted
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
 /* ── Chat Bubble ── */
-const Bubble = ({ msg, downloadXlsx, handleSendOption, handleVendorDone }) => {
+const Bubble = ({ msg, downloadXlsx, handleSendOption, handleVendorDone, sendOptionAnswer,sendMultiOptionAnswer,typing,}) => {
   const isBot = msg.role === "bot";
 
   if (isBot && msg.text === "__boq__") {
@@ -95,35 +345,80 @@ const Bubble = ({ msg, downloadXlsx, handleSendOption, handleVendorDone }) => {
       </div>
     );
   }
-
-  if (isBot && msg.text === "__vendor_selector__") {
-    return (
-      <div className="flex gap-3 justify-start">
-        <BotAvatar />
-        <VendorSelector tenderId={msg.tenderId} docType={msg.docType} onDone={handleVendorDone} />
-      </div>
-    );
-  }
-
-  if (isBot && msg.text === "__generating__") {
-    return (
-      <div className="flex gap-3 justify-start">
-        <BotAvatar />
-        <div className="flex items-center gap-2.5 bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm text-[12.5px] text-gray-500">
-          <Loader2 size={13} className="animate-spin text-green-500" />
-          Generating your multi-work BOQ Excel…
-        </div>
-      </div>
-    );
-  }
-
+if (
+  isBot &&
+  msg.text === "__vendor_selector__"
+) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 7 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22 }}
-      className={`flex gap-3 ${isBot ? "justify-start" : "justify-end"}`}
-    >
+    <div className="flex gap-3 justify-start">
+      <BotAvatar />
+
+      <VendorSelector
+        tenderId={msg.tenderId}
+        docType={msg.docType}
+        onDone={handleVendorDone}
+      />
+    </div>
+  );
+}
+
+
+/* ── BOQ generating state ── */
+
+if (
+  isBot &&
+  msg.text === "__generating__"
+) {
+  return (
+    <div className="flex gap-3 justify-start">
+      <BotAvatar />
+
+      <div className="flex items-center gap-2.5 bg-white border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm text-[12.5px] text-gray-500">
+        <Loader2
+          size={13}
+          className="animate-spin text-green-500"
+        />
+
+        Generating your multi-work BOQ Excel…
+      </div>
+    </div>
+  );
+}
+
+
+/* ── Dynamic AI single / multi select question ── */
+
+if (
+  isBot &&
+  (
+    msg.inputType === "single_select" ||
+    msg.inputType === "multi_select"
+  )
+) {
+  return (
+    <QuestionBubble
+      msg={msg}
+      sendOptionAnswer={sendOptionAnswer}
+      sendMultiOptionAnswer={sendMultiOptionAnswer}
+      typing={typing}
+    />
+  );
+}
+
+
+/* ── Normal chat bubble ── */
+
+return (
+  <motion.div
+    initial={{ opacity: 0, y: 7 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.22 }}
+    className={`flex gap-3 ${
+      isBot
+        ? "justify-start"
+        : "justify-end"
+    }`}
+  >
       {isBot && <BotAvatar />}
       <div
         className={`relative max-w-[72%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed shadow-sm
@@ -132,15 +427,28 @@ const Bubble = ({ msg, downloadXlsx, handleSendOption, handleVendorDone }) => {
             : "bg-green-500 text-white rounded-tr-sm"
           }`}
       >
-        {msg.options ? (
-          <div className="space-y-2">
-            <p className="mb-3 text-gray-700">{msg.text}</p>
-            {msg.options.map((opt) => (
-              <motion.button
-                key={opt.key}
-                whileHover={{ x: 2 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => opt.onSelect(opt.key)}
+     {Array.isArray(msg.options) &&
+msg.options.some(
+  (opt) =>
+    typeof opt?.onSelect === "function"
+) ? (
+  <div className="space-y-2">
+    <p className="mb-3 text-gray-700">
+      {msg.text}
+    </p>
+
+    {msg.options.map((opt) => (
+      <motion.button
+        key={opt.key}
+        whileHover={{ x: 2 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={() => {
+          if (
+            typeof opt.onSelect === "function"
+          ) {
+            opt.onSelect(opt.key);
+          }
+        }}
                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border-2 transition-all text-left
                   ${opt.key === "manual"
                     ? "border-green-200 bg-green-50 hover:border-green-400 hover:bg-green-100 text-green-700"
@@ -258,11 +566,27 @@ const DocUploadPanel = ({ onSubmit, onCancel, disabled }) => {
 ══════════════════════════════════════════════════ */
 const CreateTender = ({ onBack }) => {
   const {
-    messages, typing, phase, error,
-    startChat, sendMessage, sendDocPrompt,
-    pushBot, reset, downloadXlsx,
-    handleSendOption, handleVendorDone,
-  } = useTenderChat();
+  messages,
+  typing,
+  phase,
+  error,
+  startChat,
+  sendMessage,
+  sendOptionAnswer,
+  sendMultiOptionAnswer,
+  sendDocPrompt,
+  pushBot,
+  reset,
+  downloadXlsx,
+  handleSendOption,
+  handleVendorDone,
+} = useTenderChat();
+  // const {
+  //   messages, typing, phase, error,
+  //   startChat, sendMessage, sendDocPrompt,
+  //   pushBot, reset, downloadXlsx,
+  //   handleSendOption, handleVendorDone,
+  // } = useTenderChat();
 
   const [input, setInput] = useState("");
   const [modeChosen, setModeChosen] = useState(false);
@@ -287,7 +611,7 @@ const CreateTender = ({ onBack }) => {
 
     const initializeWelcomeScreen = () => {
   pushBot(
-    "👋 Hi! I'll help you create a detailed multi-work BOQ (Bill of Quantities) in Excel covering all your project work areas — electrical, CCTV, flooring, civil, furniture, and more."
+   "👋 Hi! I'll help you create a detailed, professional BOQ based on your project requirements."
   );
 
   setTimeout(() => {
@@ -297,7 +621,7 @@ const CreateTender = ({ onBack }) => {
           key: "manual",
           label: "Answer a few quick questions",
           description:
-            "I ask 2 smart question rounds — complete multi-work Excel BOQ ready in minutes.",
+            "Describe your project directly or attach an existing requirements document.",
           onSelect: handleModeSelect,
         },
         {
@@ -320,11 +644,36 @@ const CreateTender = ({ onBack }) => {
   initializeWelcomeScreen();
 }, []);
 
-  const resolvedMessages = messages.map((m, i) =>
-    m.options && modeChosen && i < messages.length - 1
-      ? { ...m, options: undefined }
-      : m
-  );
+
+
+const resolvedMessages = messages.map((message, index) => {
+  const isOldWelcomeOption =
+    Array.isArray(message.options) &&
+    message.options.some(
+      (option) =>
+        option?.key === "manual" ||
+        option?.key === "upload"
+    );
+
+  if (
+    isOldWelcomeOption &&
+    modeChosen &&
+    index < messages.length - 1
+  ) {
+    return {
+      ...message,
+      options: undefined,
+    };
+  }
+
+  return message;
+});
+
+  // const resolvedMessages = messages.map((m, i) =>
+  //   m.options && modeChosen && i < messages.length - 1
+  //     ? { ...m, options: undefined }
+  //     : m
+  // );
 
 
 
@@ -342,6 +691,26 @@ const handleNewChat = () => {
   }, 100);
 };
 
+const activeQuestion = [...messages]
+  .reverse()
+  .find(
+    (message) =>
+      message.role === "bot" &&
+      message.inputType &&
+      message.inputType !== "none" &&
+      !message.answered
+  );
+
+const activeInputType =
+  activeQuestion?.inputType || "text";
+
+const showTextInput =
+  phase === "chatting" &&
+  (
+    activeInputType === "text" ||
+    activeInputType === "number"
+  );
+
   const handleSend = () => {
     const val = input.trim();
     if (!val) return;
@@ -357,10 +726,11 @@ const handleNewChat = () => {
     phase !== "sending" &&
     messages.some(m => m.text?.includes("Describe your project"));
 
-  const answeredCount = messages.filter(m => m.role === "user" && modeChosen).length;
-  const progress =
-    phase === "chatting" ? Math.min(Math.round((answeredCount / 4) * 100), 90)
-    : phase === "done" ? 100 : 0;
+  const answeredCount = messages.filter(
+  (message) =>
+    message.role === "user" &&
+    modeChosen
+).length;
 
   return (
     <motion.div
@@ -387,18 +757,17 @@ const handleNewChat = () => {
           </div>
         </div>
 
-        {phase === "chatting" && (
-          <div className="ml-auto hidden sm:flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-full px-3 py-1.5">
-            <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-green-500 rounded-full"
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.4 }}
-              />
-            </div>
-            <span className="text-[10px] font-semibold text-gray-500 tabular-nums">Round {answeredCount}/2</span>
-          </div>
-        )}
+       {phase === "chatting" && (
+  <div className="ml-auto hidden sm:flex items-center gap-2 bg-gray-100 border border-gray-200 rounded-full px-3 py-1.5">
+    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+
+    <span className="text-[10px] font-semibold text-gray-500">
+      {answeredCount > 0
+        ? `${answeredCount} detail${answeredCount > 1 ? "s" : ""} collected`
+        : "Gathering requirements"}
+    </span>
+  </div>
+)}
 
        <div className="ml-auto flex items-center gap-2">
   {phase === "done" && (
@@ -439,10 +808,13 @@ const handleNewChat = () => {
               {resolvedMessages.map((msg, i) => (
                 <Bubble
                   key={i}
-                  msg={msg}
-                  downloadXlsx={downloadXlsx}
-                  handleSendOption={handleSendOption}
-                  handleVendorDone={handleVendorDone}
+  msg={msg}
+  downloadXlsx={downloadXlsx}
+  handleSendOption={handleSendOption}
+  handleVendorDone={handleVendorDone}
+  sendOptionAnswer={sendOptionAnswer}
+  sendMultiOptionAnswer={sendMultiOptionAnswer}
+  typing={typing}
                 />
               ))}
             </AnimatePresence>
@@ -475,11 +847,15 @@ const handleNewChat = () => {
           )}
         </AnimatePresence>
 
-        {phase === "chatting" && (
+       {showTextInput && (
           <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3">
             <div className="flex items-center gap-2 bg-gray-50 rounded-xl border border-gray-200 px-4 py-2.5 focus-within:border-green-400 focus-within:bg-white transition-all">
               <input
-                type="text"
+  type={
+    activeInputType === "number"
+      ? "number"
+      : "text"
+  }
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
