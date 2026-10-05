@@ -169,7 +169,19 @@ const UserModal = ({ user, onClose, onSave, customRoles }) => {
     email: user?.email || "",
     password: "",
     role: user?.role || "employee",
+
+    joiningDate: user?.employment?.joiningDate
+    ? user.employment.joiningDate.slice(0, 10)
+    : "",
+
+  exitDate: user?.employment?.exitDate
+    ? user.employment.exitDate.slice(0, 10)
+    : "",
+
+  currentlyWorking:
+    user?.employment?.currentlyWorking ?? true,
   });
+
   const [errors, setErrors] = useState({});
   const [showPass, setShowPass] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -187,6 +199,21 @@ const UserModal = ({ user, onClose, onSave, customRoles }) => {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Invalid email address";
     if (!isEdit && !form.password.trim()) errs.password = "Password is required";
     if (!isEdit && form.password.length < 6) errs.password = "Minimum 6 characters";
+    if (!form.joiningDate) {
+  errs.joiningDate = "Joining date is required";
+}
+
+if (!form.currentlyWorking && !form.exitDate) {
+  errs.exitDate = "Exit date is required";
+}
+
+if (
+  form.joiningDate &&
+  form.exitDate &&
+  new Date(form.exitDate) < new Date(form.joiningDate)
+) {
+  errs.exitDate = "Exit date cannot be before joining date";
+}
     return errs;
   };
 
@@ -194,7 +221,13 @@ const UserModal = ({ user, onClose, onSave, customRoles }) => {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setSaving(true);
-    const payload = { name: form.name.trim(), email: form.email.trim(), role: form.role };
+    const payload = { name: form.name.trim(), email: form.email.trim(), role: form.role,
+       employment: {
+    joiningDate: form.joiningDate || null,
+    exitDate: form.currentlyWorking ? null : form.exitDate || null,
+    currentlyWorking: form.currentlyWorking,
+  },
+     };
     if (!isEdit || form.password) payload.password = form.password;
     await onSave(payload, user?._id);
     setSaving(false);
@@ -270,7 +303,53 @@ const UserModal = ({ user, onClose, onSave, customRoles }) => {
             </label>
             <RoleSelect value={form.role} onChange={set("role")} roles={customRoles} />
           </div>
+
+           {/* Joining Date — create ke time bhi, edit ke time bhi dikhega */}
+          <FormField label="Joining Date" error={errors.joiningDate}>
+            <input
+              type="date"
+              value={form.joiningDate}
+              onChange={set("joiningDate")}
+              className={inputCls(false, errors.joiningDate)}
+            />
+          </FormField>
+
+          {/* Currently Working + Exit Date — sirf Edit mode me dikhenge */}
+          {isEdit && (
+            <>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Currently Working
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((p) => ({ ...p, currentlyWorking: !p.currentlyWorking }))
+                  }
+                >
+                  {form.currentlyWorking ? (
+                    <ToggleRight size={22} className="text-emerald-500" />
+                  ) : (
+                    <ToggleLeft size={22} className="text-gray-400" />
+                  )}
+                </button>
+              </div>
+
+              {!form.currentlyWorking && (
+                <FormField label="Exit Date" error={errors.exitDate}>
+                  <input
+                    type="date"
+                    value={form.exitDate}
+                    onChange={set("exitDate")}
+                    className={inputCls(false, errors.exitDate)}
+                  />
+                </FormField>
+              )}
+            </>
+          )}
         </div>
+
+        
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">

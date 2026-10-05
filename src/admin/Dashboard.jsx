@@ -19,6 +19,13 @@ import CreateProposal from "./newproposal/CreateProposal";
 import ProposalHub from "./newproposal/ProposalHub";
 import TenderManagement from "./tender/TenderManagement";
 import InvoiceModule from "./invoices/InvoiceModule";
+import AttendanceHome from "./attendance/AttendanceHome";
+import HolidaysModule from "./holidays/HolidaysModule";
+import LeaveModule from "./leaves/LeaveModule";
+import { leaveLinkParams } from "./leaves/leaveLink";
+import WorkFromHomeSettings from "./wfh/WorkFromHomeSettings";
+import PayrollModule from "./payroll/PayrollModule";
+
 
 import {
   LayoutDashboard,
@@ -42,6 +49,9 @@ import {
   Lock,
   Briefcase,
   ReceiptText,
+  CalendarCheck,
+  WalletCards,
+  CalendarDays,
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -146,6 +156,19 @@ const Dashboard = () => {
   
 
   const { admin, logout, hasPermission } = useContext(AuthContext);
+
+  const canAccessLeaves = [
+  "view_leaves", "apply_leaves", "approve_leaves",
+  "view_all_leaves", "manage_leave_settings", "manage_leave_balances",
+].some((permission) => hasPermission(permission));
+
+  const canAccessHolidays = [
+  "view_holidays",
+  "create_holidays",
+  "edit_holidays",
+  "delete_holidays",
+  "manage_weekly_offs",
+].some((permission) => hasPermission(permission));
   const navigate = useNavigate();
 
   const [time, setTime] = useState(new Date());
@@ -153,7 +176,9 @@ const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState(() =>
+  leaveLinkParams().get("module") === "leaves" ? "leaves" : "dashboard"
+);
   const [settingsSubPage, setSettingsSubPage] = useState("users");
   const [contactCount, setContactCount] = useState(0);
   const [leadCount, setLeadCount] = useState(0);
@@ -329,6 +354,47 @@ const Dashboard = () => {
   ].filter((n) => n.show);
 
   const managementNav = [
+
+    {
+  icon: CalendarDays,
+  label: "Leave Management",
+  key: "leaves",
+  show: canAccessLeaves,
+},
+
+{
+  icon: WalletCards,
+  label: "Payroll",
+  key: "payroll",
+  show: hasPermission("view_payroll"),
+},
+     {
+  icon: CalendarCheck,
+  label: "Attendance",
+  key: "attendance",
+  show: [
+    "view_attendance",
+    "mark_attendance",
+    "view_all_attendance",
+    "view_monthly_records",
+  ].some((permission) => hasPermission(permission)),
+},
+
+{
+  icon: CalendarDays,
+  label: "Holidays & Weekly Offs",
+  key: "holidays",
+  show: canAccessHolidays,
+},
+
+{
+      icon: Settings,
+      label: "WFH Settings",
+      key: "wfh-settings",
+      show: hasPermission("manage_wfh_settings"),
+    },
+
+ 
     {
       icon: UserCog, label: "Users", key: "users",
       show: hasPermission("view_users"),
@@ -387,6 +453,9 @@ const Dashboard = () => {
 
   const pageTitle = {
     dashboard: "Overview",
+    attendance: "Attendance",
+    holidays: "Holidays & Weekly Offs",
+    leaves: "Leave Management",
     leads: "Leads",
     newsletters: "Newsletter Subscribers",
     contacts: "Contact Leads",
@@ -669,7 +738,9 @@ const Dashboard = () => {
                       <p className="text-[11px] font-medium mt-0.5 text-green-600">{roleInfo.label}</p>
                       <p className="text-[10px] text-gray-400 truncate">{admin?.email}</p>
                     </div>
-                    <button className="w-full px-4 py-2.5 text-left text-[13px] text-gray-500 hover:text-gray-800 hover:bg-gray-50 flex items-center gap-2 transition">
+                    <button
+                    onClick={() => { setPage("profile"); setProfileOpen(false); }}
+                    className="w-full px-4 py-2.5 text-left text-[13px] text-gray-500 hover:text-gray-800 hover:bg-gray-50 flex items-center gap-2 transition">
                       <User size={13} /> Profile
                     </button>
                     {(hasPermission("view_settings") || hasPermission("view_roles") || hasPermission("view_users")) && (
@@ -786,6 +857,104 @@ const Dashboard = () => {
               </motion.div>
             )}
 
+
+            {page === "profile" && (
+  <motion.div
+    key="profile"
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0 }}
+    className="max-w-2xl space-y-6"
+  >
+    <div>
+      <h2 className="text-xl font-black text-gray-800">Profile</h2>
+      <p className="text-gray-400 text-[13px] mt-0.5">
+        View your account information.
+      </p>
+    </div>
+
+    <div className="bg-white border border-gray-200 rounded-2xl p-6">
+      <div className="flex items-center gap-4 pb-5 border-b border-gray-100">
+        <div className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center text-xl font-bold text-white">
+          {admin?.name?.[0]?.toUpperCase() || "A"}
+        </div>
+
+        <div>
+          <h3 className="text-base font-bold text-gray-800">
+            {admin?.name || "Admin"}
+          </h3>
+          <p className="text-[13px] text-green-600">
+            {roleInfo.label}
+          </p>
+        </div>
+      </div>
+
+      <dl className="grid gap-4 pt-5 sm:grid-cols-2">
+        <div>
+          <dt className="text-[11px] font-semibold uppercase text-gray-400">
+            Name
+          </dt>
+          <dd className="mt-1 text-[13px] text-gray-700">
+            {admin?.name || "Not available"}
+          </dd>
+        </div>
+
+        <div>
+          <dt className="text-[11px] font-semibold uppercase text-gray-400">
+            Email
+          </dt>
+          <dd className="mt-1 text-[13px] text-gray-700 break-words">
+            {admin?.email || "Not available"}
+          </dd>
+        </div>
+
+        <div>
+          <dt className="text-[11px] font-semibold uppercase text-gray-400">
+            Role
+          </dt>
+          <dd className="mt-1 text-[13px] text-gray-700">
+            {roleInfo.label}
+          </dd>
+        </div>
+
+          <div>
+    <dt className="text-[11px] font-semibold uppercase text-gray-400">Joining Date</dt>
+    <dd className="mt-1 text-[13px] text-gray-700">
+      {admin?.employment?.joiningDate
+        ? new Date(admin.employment.joiningDate).toLocaleDateString()
+        : "Not available"}
+    </dd>
+  </div>
+
+  <div>
+    <dt className="text-[11px] font-semibold uppercase text-gray-400">Employment Status</dt>
+    <dd className="mt-1 text-[13px] text-gray-700">
+      {admin?.employment?.currentlyWorking ? "Currently Working" : "Not Working"}
+    </dd>
+  </div>
+
+  {!admin?.employment?.currentlyWorking && (
+    <div>
+      <dt className="text-[11px] font-semibold uppercase text-gray-400">Exit Date</dt>
+      <dd className="mt-1 text-[13px] text-gray-700">
+        {admin?.employment?.exitDate
+          ? new Date(admin.employment.exitDate).toLocaleDateString()
+          : "Not available"}
+      </dd>
+    </div>
+  )}
+      </dl>
+    </div>
+
+    <button
+      onClick={() => setPage("dashboard")}
+      className="px-4 py-2 rounded-xl text-[13px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition border border-gray-200"
+    >
+      Back to dashboard
+    </button>
+  </motion.div>
+)}
+
             {/* ── DATA PAGES ── */}
             {page === "leads" && (
               <motion.div key="leads" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -843,14 +1012,60 @@ const Dashboard = () => {
               </motion.div>
             )}
 
-         {page === "invoices" && (
-  hasPermission("view_invoices") ? (
-    <motion.div
-      key="invoices"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
+
+
+            {page === "payroll" && (
+  hasPermission("view_payroll") ? (
+    <PayrollModule hasPermission={hasPermission} />
+  ) : (
+    <AccessDenied goBack={() => setPage("dashboard")} />
+  )
+)}
+
+
+              {page === "wfh-settings" && (
+  hasPermission("manage_wfh_settings") ? (
+    <WorkFromHomeSettings />
+  ) : (
+    <AccessDenied goBack={() => setPage("dashboard")} />
+  )
+)}
+
+  {page === "attendance" && (
+  [
+    "view_attendance",
+    "mark_attendance",
+    "view_all_attendance",
+    "view_monthly_records",
+  ].some((permission) => hasPermission(permission)) ? (
+    <AttendanceHome
+      key={`attendance-${admin?._id || admin?.id || admin?.email}`}
+    />
+  ) : (
+    <AccessDenied goBack={() => setPage("dashboard")} />
+  )
+)}
+
+{page === "holidays" && (
+  canAccessHolidays ? (
+    <HolidaysModule
+      key={`holidays-${admin?._id || admin?.id || admin?.email}`}
+    />
+  ) : (
+    <AccessDenied goBack={() => setPage("dashboard")} />
+  )
+)}
+
+{page === "leaves" && (
+  canAccessLeaves ? (
+    <LeaveModule key={`leaves-${admin?._id || admin?.id || admin?.email}`} />
+  ) : (
+    <AccessDenied goBack={() => setPage("dashboard")} />
+  )
+)}
+
+         {page === "invoices" && ( hasPermission("view_invoices") ? (
+    <motion.div key="invoices" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <InvoiceModule />
     </motion.div>
   ) : (
@@ -859,6 +1074,8 @@ const Dashboard = () => {
     />
   )
 )}
+
+
 
             {page === "proposals" && (
               <motion.div key="proposals" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

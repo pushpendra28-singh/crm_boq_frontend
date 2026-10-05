@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import API_BASE_URL from "../config/api";
 import { AuthContext } from "../auth/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -121,7 +121,7 @@ const CheckIcon = () => (
 
 const Login = () => {
   const navigate = useNavigate();
-
+const [searchParams] = useSearchParams();
   const { login } = useContext(AuthContext);
 
   const [form, setForm] = useState({
@@ -143,6 +143,13 @@ const Login = () => {
   const [loading, setLoading] =
     useState(false);
 
+    useEffect(() => {
+  if (searchParams.get("reason") === "session-expired") {
+    setApiMessage("Your session has expired. Please sign in again.");
+  }
+}, [searchParams]);
+
+
   /* ─────────────────────────────────────────
      MESSAGE RESET
      Existing logic remains same
@@ -150,6 +157,7 @@ const Login = () => {
 
   useEffect(() => {
     if (
+      
       Object.keys(errors).length > 0 ||
       apiMessage ||
       successMessage
