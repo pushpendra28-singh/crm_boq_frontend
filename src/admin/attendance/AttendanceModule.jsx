@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Clock3, CalendarCheck, LocateFixed, MapPin, RefreshCw, AlertCircle, LogIn, LogOut, ShieldCheck } from "lucide-react";
 import { attendanceRequest, getCurrentLocation, locationFeedback } from "./attendanceApi";
 import "./attendance.css";
+// import "./attendance-theme.css"; /* THEME: navy + gradient overrides, keep this AFTER attendance.css */
 import AttendanceHistory from "./AttendanceHistory";
 
 const zone = "Asia/Kolkata";
@@ -199,16 +200,16 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
             <p className="att-timezone">Indian Standard Time <span>•</span> Asia/Kolkata</p>
             <div className="att-shift"><Clock3 size={18} /><div><strong>{shiftTime(data.office.checkInTime)} — {shiftTime(data.office.checkOutTime)}</strong><span>Office shift · {data.office.graceMinutes}-minute arrival grace</span></div></div>
             {!checkedIn && !complete && (
-              <div className="mt-5 rounded-2xl border border-gray-100 bg-gray-50 p-3">
-                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Work mode</div>
+              <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 p-3">
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-blue-200">Work mode</div>
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${workMode === "office" ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100"}`} onClick={() => setWorkMode("office")} disabled={!!busy}>Office</button>
-                  <button type="button" className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${workMode === "wfh" ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100"} disabled:cursor-not-allowed disabled:opacity-50`} onClick={() => wfhSelectable && setWorkMode("wfh")} disabled={!!busy || !wfhSelectable} title={!wfhSelectable ? "WFH is not enabled for you" : "Work from home"}>Work From Home{wfhAllowed ? <span className="ml-1 text-[10px]">· {data.wfh.dayType === "half_day" ? "Half" : "Full"}</span> : <span className="ml-1 text-[10px]">· Not allowed</span>}</button>
+                  <button type="button" className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${workMode === "office" ? "border-white bg-white text-[#0a1a4f] shadow-md" : "border-white/20 bg-white/10 text-white hover:bg-white/20"}`} onClick={() => setWorkMode("office")} disabled={!!busy}>Office</button>
+                  <button type="button" className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${workMode === "wfh" ? "border-emerald-400 bg-emerald-500 text-white shadow-md shadow-emerald-500/30" : "border-white/20 bg-white/10 text-white hover:bg-white/20"} disabled:cursor-not-allowed disabled:opacity-50`} onClick={() => wfhSelectable && setWorkMode("wfh")} disabled={!!busy || !wfhSelectable} title={!wfhSelectable ? "WFH is not enabled for you" : "Work from home"}>Work From Home{wfhAllowed ? <span className="ml-1 text-[10px]">· {data.wfh.dayType === "half_day" ? "Half" : "Full"}</span> : <span className="ml-1 text-[10px]">· Not allowed</span>}</button>
                 </div>
               </div>
             )}
             {activeWorkMode === "wfh" && wfhAllowed && !complete && (
-              <p className="mt-3 text-xs font-medium text-emerald-700">WFH attendance will be recorded as {data.wfh.dayType === "half_day" ? "Half Day" : "Full Day"}.</p>
+              <p className="mt-3 text-xs font-medium text-emerald-300">WFH attendance will be recorded as {data.wfh.dayType === "half_day" ? "Half Day" : "Full Day"}.</p>
             )}
             <div className="att-action-area"><h2>{complete ? "Your workday is recorded." : checkedIn ? "Ready to wrap up?" : "Start your day here."}</h2><p>{complete ? "Your check-in and check-out are saved below." : checkedIn ? "Check out when you finish. Your current location will be verified." : activeWorkMode === "wfh" ? "Mark your attendance from your current location. Office radius does not apply to approved WFH." : `Mark your arrival from within ${data.office.radiusMeters} meters of the office.`}</p>
               <motion.button whileTap={reduceMotion ? undefined : { scale: 0.985 }} className="att-primary" disabled={locked || complete || !canMark || data.actionBlocked} onClick={() => perform(true)}>
@@ -261,8 +262,6 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 
 
 
-
-
 // import { useCallback, useEffect, useRef, useState } from "react";
 // import { motion, useReducedMotion } from "framer-motion";
 // import { ArrowRight, CheckCircle2, Clock3, CalendarCheck, LocateFixed, MapPin, RefreshCw, AlertCircle, LogIn, LogOut, ShieldCheck } from "lucide-react";
@@ -284,6 +283,7 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //   const [notice, setNotice] = useState(null);
 //   const [location, setLocation] = useState(null);
 //   const [stale, setStale] = useState(true);
+//   const [workMode, setWorkMode] = useState("office");
 //   const lock = useRef(false);
 //   const mounted = useRef(false);
 //   const abort = useRef(null);
@@ -296,6 +296,7 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //     setNow(serverTime);
 //     currentDate.current = dateKey(serverTime);
 //     setData((previous) => ({ ...previous, ...result }));
+//     if (result.attendance?.workMode) setWorkMode(result.attendance.workMode);
 //     setStale(false);
 //   }, []);
 //   const refresh = useCallback(async (quiet = false) => {
@@ -342,6 +343,8 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //   }, [refresh]);
 
 //   async function perform(mark) {
+//   const effectiveMode = data?.attendance?.workMode || workMode;
+
 //   if (mark && !canMark) {
 //     setNotice({
 //       type: "error",
@@ -358,6 +361,11 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //   ) {
 //     return;
 //   }
+
+//   if (effectiveMode === "wfh" && !data.wfh?.enabled && !data.attendance?.workMode) {
+//     setNotice({ type: "error", text: "Work From Home is not enabled for your account." });
+//     return;
+//   }
 //     lock.current = true;
 //     setNotice(null);
 //     setLocation(null);
@@ -367,22 +375,31 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //     try {
 //       const coordinates = await getCurrentLocation();
 //       if (!mounted.current) return;
-//       const feedback = locationFeedback(coordinates, data.office);
+//       const feedback = effectiveMode === "wfh"
+//         ? { ...coordinates, checkedAt: Date.now(), quality: coordinates.accuracy > 0 && coordinates.accuracy <= (data.office?.maxAccuracyMeters || 100) }
+//         : locationFeedback(coordinates, data.office);
 //       setLocation(feedback);
 //       if (!mark) {
-//         setNotice({
-//           type: feedback.quality && feedback.inside ? "success" : "info", text:
-//             !feedback.quality ? "Location accuracy is low. Move near a window and try again." :
-//               feedback.inside ? "Your reported location is within the office radius. Final verification happens when you mark attendance." :
-//                 `You are approximately ${Math.ceil(feedback.distance)} meters away. Move within ${data.office.radiusMeters} meters of the office.`
-//         });
+//         if (!feedback.quality) {
+//           setNotice({ type: "info", text: "GPS accuracy is low. Move near a window or outside and try again." });
+//         } else if (effectiveMode === "wfh") {
+//           setNotice({ type: "success", text: "Your current GPS location is ready for WFH attendance." });
+//         } else if (feedback.inside) {
+//           setNotice({ type: "success", text: "Your reported location is within the office radius. Final verification happens when you mark attendance." });
+//         } else {
+//           setNotice({ type: "info", text: `You are approximately ${Math.ceil(feedback.distance)} meters away. Move within ${data.office.radiusMeters} meters of the office.` });
+//         }
+//         return;
+//       }
+//       if (!feedback.quality) {
+//         setNotice({ type: "error", text: "GPS accuracy is too low. Move near a window or outside and try again." });
 //         return;
 //       }
 //       // POST even when the local estimate differs; backend policy is authoritative.
 //       setBusy("saving");
 //       submitted = true;
 //       const endpoint = data.nextAction === "check_in" ? "/check-in" : "/check-out";
-//       const result = await attendanceRequest(endpoint, { method: "POST", body: coordinates, signal: abort.current.signal });
+//       const result = await attendanceRequest(endpoint, { method: "POST", body: { ...coordinates, workMode: effectiveMode }, signal: abort.current.signal });
 //       if (!mounted.current) return;
 //       apply(result);
 //       setNotice({ type: "success", text: result.message });
@@ -419,6 +436,10 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //   const worked = record?.workingMinutes ?? elapsed;
 //   const status = data?.actionBlocked ? (data?.attendance?.attendanceStatus === "absent" ? "Marked absent" : "Record removed") : complete ? "Day completed" : checkedIn ? "Checked in" : "Not checked in";
 //   const freshLocation = location && now - offset.current - location.checkedAt < 60000;
+//   const activeWorkMode = record?.workMode || workMode;
+//   const wfhAllowed = Boolean(data?.wfh?.enabled);
+//   const wfhSelectable = wfhAllowed || record?.workMode === "wfh";
+//   const displayedLocation = location || record?.checkIn?.location || null;
 //   const locked = !!busy || stale || !data;
 //   const entrance = reduceMotion ? {} : { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35 } };
 
@@ -441,7 +462,19 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //             <div className="att-clock">{new Date(now).toLocaleTimeString("en-IN", { timeZone: zone, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}</div>
 //             <p className="att-timezone">Indian Standard Time <span>•</span> Asia/Kolkata</p>
 //             <div className="att-shift"><Clock3 size={18} /><div><strong>{shiftTime(data.office.checkInTime)} — {shiftTime(data.office.checkOutTime)}</strong><span>Office shift · {data.office.graceMinutes}-minute arrival grace</span></div></div>
-//             <div className="att-action-area"><h2>{complete ? "Your workday is recorded." : checkedIn ? "Ready to wrap up?" : "Start your day here."}</h2><p>{complete ? "Your check-in and check-out are saved below." : checkedIn ? "Check out when you finish. Your current location will be verified." : `Mark your arrival from within ${data.office.radiusMeters} meters of the office.`}</p>
+//             {!checkedIn && !complete && (
+//               <div className="mt-5 rounded-2xl border border-gray-100 bg-gray-50 p-3">
+//                 <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Work mode</div>
+//                 <div className="grid grid-cols-2 gap-2">
+//                   <button type="button" className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${workMode === "office" ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100"}`} onClick={() => setWorkMode("office")} disabled={!!busy}>Office</button>
+//                   <button type="button" className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${workMode === "wfh" ? "border-emerald-600 bg-emerald-600 text-white" : "border-gray-200 bg-white text-gray-600 hover:bg-gray-100"} disabled:cursor-not-allowed disabled:opacity-50`} onClick={() => wfhSelectable && setWorkMode("wfh")} disabled={!!busy || !wfhSelectable} title={!wfhSelectable ? "WFH is not enabled for you" : "Work from home"}>Work From Home{wfhAllowed ? <span className="ml-1 text-[10px]">· {data.wfh.dayType === "half_day" ? "Half" : "Full"}</span> : <span className="ml-1 text-[10px]">· Not allowed</span>}</button>
+//                 </div>
+//               </div>
+//             )}
+//             {activeWorkMode === "wfh" && wfhAllowed && !complete && (
+//               <p className="mt-3 text-xs font-medium text-emerald-700">WFH attendance will be recorded as {data.wfh.dayType === "half_day" ? "Half Day" : "Full Day"}.</p>
+//             )}
+//             <div className="att-action-area"><h2>{complete ? "Your workday is recorded." : checkedIn ? "Ready to wrap up?" : "Start your day here."}</h2><p>{complete ? "Your check-in and check-out are saved below." : checkedIn ? "Check out when you finish. Your current location will be verified." : activeWorkMode === "wfh" ? "Mark your attendance from your current location. Office radius does not apply to approved WFH." : `Mark your arrival from within ${data.office.radiusMeters} meters of the office.`}</p>
 //               <motion.button whileTap={reduceMotion ? undefined : { scale: 0.985 }} className="att-primary" disabled={locked || complete || !canMark || data.actionBlocked} onClick={() => perform(true)}>
 //                 {busy === "locating" || busy === "saving" ? <RefreshCw size={20} className="att-spin" /> : complete ? <CheckCircle2 size={20} /> : checkedIn ? <LogOut size={20} /> : <LogIn size={20} />}
 //                 {busy === "locating" ? "Getting your location…" : busy === "saving" ? "Saving attendance…" : data.actionBlocked ? "Contact administrator" : complete ? "Attendance completed" : checkedIn ? "Check out" : "Check in"}
@@ -457,12 +490,24 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //             </div>
 //           </div>
 //           <aside className="att-card att-location">
-//             <div className="att-row"><h2>Office location</h2><MapPin size={19} className="att-green" /></div>
-//             <div className="att-radar" aria-hidden="true"><div className="att-ring att-ring-outer" /><div className="att-ring att-ring-inner" /><div className="att-office-pin"><MapPin size={30} /></div><span className="att-radius">{data.office.radiusMeters} m radius</span></div>
-//             <h3>{data.office.name}</h3><p className="att-location-status">{!location ? "Check your location when you’re ready." : !freshLocation ? "Location estimate expired. Check again for an update." : !location.quality ? "Location accuracy needs improvement" : location.inside ? "Reported location is within range" : "Reported location is outside range"}</p>
-//             <div className="att-location-metrics"><div><span>Estimated distance</span><strong>{freshLocation ? `${Math.ceil(location.distance)} m` : "—"}</strong></div><div><span>GPS accuracy</span><strong>{freshLocation ? `± ${Math.ceil(location.accuracy)} m` : "—"}</strong></div></div>
-//             <button className="att-secondary att-full" disabled={locked} onClick={() => perform(false)}><LocateFixed size={17} />{busy === "locating" ? "Locating…" : "Check location"}</button>
-//             <p className="att-small">Location is requested when you check it or mark attendance. This graphic illustrates the radius; it is not a live map.</p>
+//             <div className="att-row"><h2>{activeWorkMode === "wfh" ? "WFH location" : "Office location"}</h2><MapPin size={19} className="att-green" /></div>
+//             {activeWorkMode === "wfh" ? (
+//               <div className="mt-4 space-y-3">
+//                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+//                   <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">GPS capture</div>
+//                   <p className="mt-1 text-sm text-emerald-800">WFH uses the employee’s current GPS location. No office-radius check is applied.</p>
+//                 </div>
+//                 <div className="att-location-metrics"><div><span>GPS latitude</span><strong>{displayedLocation ? displayedLocation.latitude.toFixed(6) : "—"}</strong></div><div><span>GPS longitude</span><strong>{displayedLocation ? displayedLocation.longitude.toFixed(6) : "—"}</strong></div><div><span>Accuracy</span><strong>{displayedLocation ? `± ${Math.ceil(displayedLocation.accuracy)} m` : "—"}</strong></div></div>
+//               </div>
+//             ) : (
+//               <>
+//                 <div className="att-radar" aria-hidden="true"><div className="att-ring att-ring-outer" /><div className="att-ring att-ring-inner" /><div className="att-office-pin"><MapPin size={30} /></div><span className="att-radius">{data.office.radiusMeters} m radius</span></div>
+//                 <h3>{data.office.name}</h3><p className="att-location-status">{!location ? "Check your location when you’re ready." : !freshLocation ? "Location estimate expired. Check again for an update." : !location.quality ? "Location accuracy needs improvement" : location.inside ? "Reported location is within range" : "Reported location is outside range"}</p>
+//                 <div className="att-location-metrics"><div><span>Estimated distance</span><strong>{freshLocation ? `${Math.ceil(location.distance)} m` : "—"}</strong></div><div><span>GPS accuracy</span><strong>{freshLocation ? `± ${Math.ceil(location.accuracy)} m` : "—"}</strong></div></div>
+//               </>
+//             )}
+//             <button className="att-secondary att-full" disabled={locked || (activeWorkMode === "wfh" && !wfhSelectable)} onClick={() => perform(false)}><LocateFixed size={17} />{busy === "locating" ? "Locating…" : "Check location"}</button>
+//             <p className="att-small">The captured coordinates are saved with the attendance record for audit purposes.</p>
 //           </aside>
 //         </div>
 //         <div className="att-stats">
@@ -476,3 +521,4 @@ export default function AttendanceModule({ canMark = false, canView = false }) {
 //     </motion.section>
 //   );
 // }
+

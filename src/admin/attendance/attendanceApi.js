@@ -1,6 +1,9 @@
 import API_BASE_URL from "../../config/api";
 
-export async function attendanceRequest(path, { method = "GET", body, signal } = {}) {
+export async function attendanceRequest(
+  path,
+  { method = "GET", body, signal, validateActionResponse = true, expectedStatus } = {}
+) {
   const token = localStorage.getItem("adminToken");
   if (!token) throw Object.assign(new Error("Your session has expired. Please log in again."), { status: 401 });
   const controller = new AbortController();
@@ -18,7 +21,10 @@ export async function attendanceRequest(path, { method = "GET", body, signal } =
     if (!response.ok) throw Object.assign(new Error(data?.message || "Unable to process attendance. Please try again."), {
       status: response.status, code: data?.code, details: data?.details,
     });
-    if (!data?.success || !["check_in", "check_out", "completed"].includes(data.nextAction) || !Number.isFinite(new Date(data.serverTime).getTime())) {
+    if (expectedStatus && response.status !== expectedStatus) {
+      throw new Error(data?.message || "Unexpected attendance response. Please refresh and try again.");
+    }
+    if (!data?.success || (validateActionResponse && (!["check_in", "check_out", "completed"].includes(data.nextAction) || !Number.isFinite(new Date(data.serverTime).getTime())))) {
       throw new Error("Unexpected attendance response. Please refresh today's status.");
     }
     return data;
@@ -59,4 +65,3 @@ export function locationFeedback(location, office) {
     inside: distance <= office.radiusMeters
   };
 }
-

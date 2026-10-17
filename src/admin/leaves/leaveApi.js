@@ -2,6 +2,7 @@ import API_BASE_URL from '../../config/api';
 // This file sits in src/admin/leaves: config is two folders above.
 export async function leaveApi(path, { method = 'GET', body, signal } = {}) {
   const token = localStorage.getItem('adminToken');
+
   if (!token) throw new Error('Your session has expired. Please sign in again.');
   const controller = new AbortController();
   let timeout = false;
@@ -15,7 +16,9 @@ export async function leaveApi(path, { method = 'GET', body, signal } = {}) {
       body: body ? JSON.stringify(body) : undefined, signal: controller.signal, cache: 'no-store',
     });
     const data = await response.json().catch(() => null);
+  
     if (!response.ok || !data) throw new Error(data?.message || 'Unable to complete the request. Refresh to check the latest state.');
+    
     return data;
   } catch (error) {
     if (timeout) throw new Error('Request timed out. Refresh to check whether your change was saved before retrying.');

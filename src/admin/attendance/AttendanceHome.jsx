@@ -14,6 +14,8 @@ export default function AttendanceHome() {
   const canViewOwn = hasPermission("view_attendance");
   const canMark = hasPermission("mark_attendance");
   const canViewAll = hasPermission("view_all_attendance");
+  const canMarkOthers =
+    canViewAll && hasPermission("mark_attendance_for_others");
   const canEdit = hasPermission("edit_attendance");
   const canDelete = hasPermission("delete_attendance");
   const canViewMonthly = hasPermission("view_monthly_records");
@@ -106,6 +108,7 @@ export default function AttendanceHome() {
         <AttendanceCalendar
           canEdit={canEdit}
           canDelete={canDelete}
+          canMark={canMarkOthers}
         />
       )}
 
