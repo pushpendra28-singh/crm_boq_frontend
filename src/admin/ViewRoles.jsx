@@ -4,7 +4,7 @@ import API_BASE_URL from "../config/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, Plus, Edit2, Trash2, X, Check,
-  ChevronDown, ChevronUp, Search, AlertTriangle, Info, Loader2,
+  ChevronDown, ChevronUp, Search, AlertTriangle, Info, Loader2, Lock,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -75,6 +75,7 @@ const RoleModal = ({ role, onClose, onSave, allPermissions }) => {
   const [color, setColor] = useState(role?.color || "#22c55e");
   const [selectedPerms, setSelectedPerms] = useState(new Set(role?.permissions || []));
   const [saving, setSaving] = useState(false);
+    const nameLocked = isEdit && String(role?.slug || "").toLowerCase() === "superadmin";
   const groupedPermissions = groupPermissions(allPermissions);
   const [expandedGroups, setExpandedGroups] = useState(Object.keys(groupedPermissions));
 
@@ -163,7 +164,9 @@ const RoleModal = ({ role, onClose, onSave, allPermissions }) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Content Editor"
-                className={INPUT_CLS}
+                disabled={nameLocked}
+                className={`${INPUT_CLS} ${nameLocked ? "opacity-60 cursor-not-allowed" : ""}`}
+                
               />
             </div>
             <div>
@@ -318,7 +321,8 @@ const DeleteModal = ({ role, onClose, onConfirm }) => {
 
 // ─── Main ViewRoles Component ──────────────────────────────────────────────────
 const ViewRoles = () => {
-  const { hasPermission } = useContext(AuthContext);
+    const { hasPermission, admin } = useContext(AuthContext);
+  const actorIsSuper = admin?.role === "superadmin";
   const [roles, setRoles] = useState([]);
   const [allPermissions, setAllPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -474,6 +478,9 @@ const ViewRoles = () => {
           const expanded = expandedRole === role._id;
           const permCount = role.permissions?.length || 0;
 
+                    const isSuperRole = String(role.slug || "").toLowerCase() === "superadmin";
+          const lockedForMe = isSuperRole && !actorIsSuper;
+
           return (
             <motion.div
               key={role._id}
@@ -494,7 +501,15 @@ const ViewRoles = () => {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <span className="text-[14px] font-bold text-[#0b1437]">{role.name}</span>
+                             <div className="flex items-center gap-2">
+                    <span className="text-[14px] font-bold text-[#0b1437]">{role.name}</span>
+                    {isSuperRole && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                        <Lock size={9} /> System role
+                      </span>
+                    )}
+                  </div>
+
                   <p className="text-[11px] text-slate-400 mt-0.5 truncate">
                     {role.description || `${permCount} permission${permCount !== 1 ? "s" : ""} assigned`}
                   </p>
@@ -517,7 +532,7 @@ const ViewRoles = () => {
                   >
                     {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </button>
-                  {hasPermission("edit_roles") && (
+                  {hasPermission("edit_roles") && !lockedForMe && (
                     <button
                       onClick={() => setEditRole(role)}
                       className="p-2 rounded-xl hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition active:scale-90"
@@ -525,7 +540,7 @@ const ViewRoles = () => {
                       <Edit2 size={14} />
                     </button>
                   )}
-                  {hasPermission("delete_roles") && (
+                  {hasPermission("delete_roles") && !isSuperRole &&  (
                     <button
                       onClick={() => setDeleteTarget(role)}
                       className="p-2 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 transition active:scale-90"

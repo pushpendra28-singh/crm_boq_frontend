@@ -25,6 +25,7 @@ import LeaveModule from "./leaves/LeaveModule";
 import { leaveLinkParams } from "./leaves/leaveLink";
 import WorkFromHomeSettings from "./wfh/WorkFromHomeSettings";
 import PayrollModule from "./payroll/PayrollModule";
+import OverviewHome from "./OverviewHome";
 
 
 import {
@@ -916,161 +917,20 @@ const confirmLogout = () => {
 
             {/* ── DASHBOARD ── */}
             {page === "dashboard" && (
-              <motion.div key="dashboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-black text-[#0a1a4f]">
-                    Good{" "}
-                    {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"},
-                    {" "}{admin?.name?.split(" ")[0]} 👋
-                  </h2>
-                  <p className="text-slate-500 text-sm mt-1">Here's what's happening in your CRM today.</p>
-                </div>
-
-                {/* metric cards — vivid gradients */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                  {hasPermission("view_leads") && (
-                    <MetricCard
-                      label="Total Leads"
-                      value={leadCount}
-                      icon={FileText}
-                      tint={METRIC_GRADIENTS.blue}
-                      iconColor="text-white"
-                      subLabel="All time"
-                      loading={loading}
-                    />
-                  )}
-                  {hasPermission("view_newsletters") && (
-                    <MetricCard
-                      label="Newsletter Subscribers"
-                      value={newsletterCount}
-                      icon={Users}
-                      tint={METRIC_GRADIENTS.green}
-                      iconColor="text-white"
-                      subLabel="All time"
-                      loading={loading}
-                    />
-                  )}
-                  {hasPermission("view_contacts") && (
-                    <MetricCard
-                      label="Contact Leads"
-                      value={contactCount}
-                      icon={Mail}
-                      tint={METRIC_GRADIENTS.violet}
-                      iconColor="text-white"
-                      subLabel="All time"
-                      loading={loading}
-                    />
-                  )}
-                  {hasPermission("view_comments") && (
-                    <MetricCard
-                      label="Comments"
-                      value={commentCount}
-                      icon={MessageSquareText}
-                      tint={METRIC_GRADIENTS.amber}
-                      iconColor="text-white"
-                      subLabel="All time"
-                      loading={loading}
-                    />
-                  )}
-                </div>
-
-                {/* quick access */}
-                {dataNav.length > 0 && (
-                  <div className="rounded-2xl bg-white p-5 shadow-sm shadow-slate-900/5 border border-slate-100">
-                    <p className="text-[12px] font-bold text-[#0a1a4f] mb-3">Quick Access</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                      {dataNav.map((item) => (
-                        <motion.button
-                          key={item.key}
-                          whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
-                          onClick={() => setPage(item.key)}
-                          className="flex items-center gap-3 p-4 bg-slate-50/70 border border-slate-200 rounded-2xl hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-md hover:shadow-blue-500/10 transition-all group text-left"
-                        >
-                          <div className="p-2 rounded-xl bg-[#0a1a4f] group-hover:bg-blue-600 transition">
-                            <item.icon size={18} className={`${ICON_TONES[item.key] || "text-sky-400"} group-hover:text-white transition`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-semibold text-slate-700 group-hover:text-[#0a1a4f] transition truncate">{item.label}</p>
-                            <p className="text-[11px] text-slate-400">{item.badge} records</p>
-                          </div>
-                          <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500 transition flex-shrink-0" />
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {!hasOverviewMetrics && dataNav.length === 0 && (
-                  <motion.section
-                    initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={reduceMotion ? { duration: 0 } : { duration: 0.45, ease: "easeOut" }}
-                    className="relative isolate min-h-[360px] overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/70 to-indigo-50/80 p-6 shadow-sm sm:p-10"
-                    aria-labelledby="workspace-welcome-title"
-                  >
-                    <motion.div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute -right-14 -top-20 h-64 w-64 rounded-full bg-blue-300/30 blur-2xl"
-                      animate={reduceMotion ? { opacity: 0.5 } : { scale: [1, 1.08, 1], opacity: [0.45, 0.7, 0.45] }}
-                      transition={reduceMotion ? { duration: 0 } : { duration: 7, repeat: Infinity, ease: "easeInOut" }}
-                    />
-                    <motion.div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-violet-300/30 blur-2xl"
-                      animate={reduceMotion ? { opacity: 0.4 } : { y: [0, -12, 0], opacity: [0.35, 0.6, 0.35] }}
-                      transition={reduceMotion ? { duration: 0 } : { duration: 8, repeat: Infinity, ease: "easeInOut" }}
-                    />
-
-                    <div className="relative mx-auto flex max-w-3xl flex-col items-center text-center">
-                      <motion.div
-                        initial={reduceMotion ? false : { scale: 0.8, rotate: -8 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 180, damping: 14, delay: 0.12 }}
-                        className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30"
-                      >
-                        <Activity size={28} />
-                      </motion.div>
-                      <h3 id="workspace-welcome-title" className="text-2xl font-bold tracking-tight text-[#0a1a4f] sm:text-3xl">
-                        Your workspace is ready
-                      </h3>
-                      <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
-                        Welcome, {admin?.name?.split(" ")[0] || "there"}. Use the shortcuts below to get to the tools available to you.
-                      </p>
-
-                      {overviewShortcuts.length > 0 ? (
-                        <div className="mt-8 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-                          {overviewShortcuts.map((item, index) => (
-                            <motion.button
-                              key={item.key}
-                              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={reduceMotion ? { duration: 0 } : { duration: 0.3, delay: 0.18 + index * 0.07 }}
-                              whileHover={reduceMotion ? undefined : { y: -3 }}
-                              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-                              onClick={() => navigateTo(item.key)}
-                              className="group flex items-center gap-3 rounded-2xl border border-white/80 bg-white/90 p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                            >
-                              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0a1a4f] transition group-hover:bg-blue-600">
-                                <item.icon size={20} className={`${ICON_TONES[item.key] || "text-sky-400"} group-hover:text-white transition`} />
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-semibold text-slate-700">{item.label}</span>
-                                <span className="mt-0.5 block text-xs text-slate-400">Open this section</span>
-                              </span>
-                              <ChevronRight size={16} className="shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
-                            </motion.button>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="mt-7 rounded-xl border border-white/80 bg-white/70 px-4 py-3 text-sm text-slate-500">
-                          Ask your administrator to grant access to the sections you need.
-                        </p>
-                      )}
-                    </div>
-                  </motion.section>
-                )}
-              </motion.div>
-            )}
+  <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <OverviewHome
+      admin={admin}
+      roleLabel={roleInfo.label}
+      formatDate={formatDate}
+      formatTime={formatTime}
+      items={[...dataNav, ...managementNav, ...systemNav]}
+      notifications={notifications}
+      assignedProjectCount={assignedProjectCount}
+      assignedLeadCount={assignedLeadCount}
+      onNavigate={navigateTo}
+    />
+  </motion.div>
+)}
 
 
             {page === "profile" && (

@@ -162,8 +162,15 @@ const RoleSelect = ({ value, onChange, roles, disabled }) => {
 };
 
 // ─── User Modal (Create / Edit) ───────────────────────────────────────────────
-const UserModal = ({ user, onClose, onSave, customRoles }) => {
+const UserModal = ({ user, onClose, onSave, customRoles, actorIsSuper = false, isSelfEdit = false }) => {
   const isEdit = !!user;
+
+  const assignableRoles = actorIsSuper
+    ? customRoles
+    : (customRoles || []).filter(
+        (r) => String(r?.slug || "").trim().toLowerCase() !== "superadmin"
+      );
+
   const [form, setForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -301,7 +308,15 @@ if (
             <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               Role
             </label>
-            <RoleSelect value={form.role} onChange={set("role")} roles={customRoles} />
+                    <RoleSelect
+              value={form.role}
+              onChange={set("role")}
+              roles={assignableRoles}
+              disabled={isSelfEdit}
+            />
+            {isSelfEdit && (
+              <p className="text-[11px] text-slate-400 mt-1.5">You cannot change your own role.</p>
+            )}
           </div>
 
            {/* Joining Date — create ke time bhi, edit ke time bhi dikhega */}
@@ -466,6 +481,11 @@ const UserRow = ({ user, currentAdmin, canEdit, canDelete, onEdit, onDelete, onT
   const grad = getGradient(user.name);
   const isSelf = currentAdmin?._id === user._id || currentAdmin?.id === user._id;
 
+    const actorIsSuper  = currentAdmin?.role === "superadmin";
+  const targetIsSuper = user.role === "superadmin";
+  const isLocked      = targetIsSuper && !actorIsSuper;
+  const showMenu      = !isLocked && (canEdit || canDelete) && (!isSelf || (actorIsSuper && canEdit));
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -507,7 +527,15 @@ const UserRow = ({ user, currentAdmin, canEdit, canDelete, onEdit, onDelete, onT
       </div>
 
       {/* Actions */}
-      {(canEdit || canDelete) && !isSelf && (
+            {isLocked && (
+        <div
+          title="Protected account – only a Super Admin can modify it"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-semibold text-slate-500"
+        >
+          <Lock size={11} /> Protected
+        </div>
+      )}
+      {showMenu && (
         <div className="relative flex-shrink-0">
           <button
             onClick={() => setMenuOpen((p) => !p)}
@@ -533,7 +561,7 @@ const UserRow = ({ user, currentAdmin, canEdit, canDelete, onEdit, onDelete, onT
                     <Edit2 size={13} className="text-blue-600" /> Edit User
                   </button>
                 )}
-                {canEdit && (
+                {canEdit && !isSelf && (
                   <button
                     onClick={() => { setMenuOpen(false); onToggleStatus(user); }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-slate-600 hover:text-[#0f1f4d] hover:bg-blue-50/60 transition"
@@ -544,7 +572,7 @@ const UserRow = ({ user, currentAdmin, canEdit, canDelete, onEdit, onDelete, onT
                     }
                   </button>
                 )}
-                {canDelete && (
+                {canDelete &&  !isSelf && (
                   <>
                     <div className="border-t border-slate-100 my-1" />
                     <button
@@ -908,6 +936,7 @@ const ViewUsers = () => {
             onClose={() => setShowCreateModal(false)}
             onSave={handleCreate}
             customRoles={customRoles}
+            actorIsSuper={admin?.role === "superadmin"}
           />
         )}
         {editUser && (
@@ -916,6 +945,8 @@ const ViewUsers = () => {
             onClose={() => setEditUser(null)}
             onSave={handleEdit}
             customRoles={customRoles}
+            actorIsSuper={admin?.role === "superadmin"}
+            isSelfEdit={String(editUser._id) === String(admin?.id || admin?._id)}
           />
         )}
         {deleteTarget && (
